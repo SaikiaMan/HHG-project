@@ -1,0 +1,8 @@
+# HHG Project Python Dependencies
+web3>=6.0.0
+google-search-results>=2.4.2
+python-dotenv>=1.0.0
+opencv-python>=4.8.0
+insightface>=0.7.3
+onnxruntime>=1.15.0
+numpy>=1.24.0
