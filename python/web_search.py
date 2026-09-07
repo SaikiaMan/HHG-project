@@ -2,8 +2,12 @@ import io
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, Union
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+venv_site_packages = PROJECT_ROOT / "venv" / "Lib" / "site-packages"
+if venv_site_packages.exists() and str(venv_site_packages) not in sys.path:
+    sys.path.insert(0, str(venv_site_packages))
 
+from typing import Dict, Any, List, Union
 import requests
 from PIL import Image
 from dotenv import load_dotenv

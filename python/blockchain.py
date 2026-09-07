@@ -1,13 +1,20 @@
 import hashlib
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Dict, Any, Tuple
+
+# Ensure venv site-packages is in sys.path if running under system python
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+venv_site_packages = PROJECT_ROOT / "venv" / "Lib" / "site-packages"
+if venv_site_packages.exists() and str(venv_site_packages) not in sys.path:
+    sys.path.insert(0, str(venv_site_packages))
+
 from web3 import Web3
 
 RPC_URL = "http://127.0.0.1:8545"
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ARTIFACT_PATH = PROJECT_ROOT / "artifacts" / "contracts" / "PostVerification.sol" / "PostVerification.json"
 DEPLOYED_ADDRESS_FILE = PROJECT_ROOT / "python" / "contract_address.txt"
 
@@ -91,8 +98,20 @@ def connect_blockchain(contract_address: str = None) -> Tuple[Web3, Any, str]:
         contract_data = json.load(f)
 
     target_address = contract_address or get_contract_address()
+    checksum_addr = Web3.to_checksum_address(target_address)
+
+    # If connected to a fresh node instance where no code exists at target_address, auto-deploy
+    try:
+        code = w3.eth.get_code(checksum_addr)
+    except Exception:
+        code = b""
+
+    if len(code) == 0 or code == b"\x00":
+        target_address = deploy_contract()
+        checksum_addr = Web3.to_checksum_address(target_address)
+
     contract = w3.eth.contract(
-        address=Web3.to_checksum_address(target_address),
+        address=checksum_addr,
         abi=contract_data["abi"],
     )
 

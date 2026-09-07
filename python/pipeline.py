@@ -32,6 +32,15 @@ if str(SCRIPT_DIR) not in sys.path:
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(1, str(PROJECT_ROOT))
 
+# Ensure venv site-packages is in sys.path if running under system python
+venv_site_packages = PROJECT_ROOT / "venv" / "Lib" / "site-packages"
+if venv_site_packages.exists() and str(venv_site_packages) not in sys.path:
+    sys.path.insert(0, str(venv_site_packages))
+
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+
 # Ensure working directory is project root for relative paths (e.g. artifacts/...)
 os.chdir(PROJECT_ROOT)
 
@@ -113,6 +122,15 @@ def download_candidate_images(candidates, output_dir, max_candidates=5, timeout=
                 with urllib.request.urlopen(req, timeout=timeout) as response:
                     img_data = response.read()
                     if len(img_data) < 200:
+                        continue
+                    # Verify valid image bytes (prevent HTML redirects/login walls)
+                    is_valid_img = (
+                        img_data.startswith(b"\xff\xd8") or
+                        img_data.startswith(b"\x89PNG") or
+                        img_data.startswith(b"RIFF") or
+                        img_data.startswith(b"GIF")
+                    )
+                    if not is_valid_img:
                         continue
                     with open(dest_path, "wb") as f:
                         f.write(img_data)
